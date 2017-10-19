@@ -43,6 +43,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 	this.minAzimuthAngle = - Infinity; // radians
 	this.maxAzimuthAngle = Infinity; // radians
 
+    // Pan limits.
+    this.targetRadius = 1;
+    this.constrainPan = false;
+
 	// Set to true to enable damping (inertia)
 	// If damping is enabled, you must call controls.update() in your animation loop
 	this.enableDamping = false;
@@ -168,6 +172,25 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			// move target to panned location
 			scope.target.add( panOffset );
+
+            // Constrain pan
+            if (scope.constrainPan)
+            {
+                // Compute original camera distance
+                var originalOffset = new THREE.Vector3();
+                originalOffset.copy( scope.target0 ).sub( scope.position0 );
+                var originalCameraDistance = originalOffset.length();
+
+                // Compute max offset according to current camera distance and target size
+                var radius = spherical.radius * scope.targetRadius / originalCameraDistance;
+
+                // Clamp pan
+                if ( scope.target.x < -radius ) scope.target.x = -radius;
+                else if ( scope.target.x > radius ) scope.target.x = radius;
+
+                if ( scope.target.y < -radius ) scope.target.y = -radius;
+                else if ( scope.target.y > radius ) scope.target.y = radius;
+            }
 
 			offset.setFromSpherical( spherical );
 
