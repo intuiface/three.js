@@ -811,11 +811,18 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			case 1:	// one-fingered touch: rotate
 
-				if ( scope.enableRotate === false ) return;
+                if ( scope.enableRotate )
+                {
+                    handleTouchStartRotate( event );
 
-				handleTouchStartRotate( event );
+                    state = STATE.TOUCH_ROTATE;
+                }
+                else if ( scope.enablePan )
+                {
+                    handleTouchStartPan( event );
 
-				state = STATE.TOUCH_ROTATE;
+                    state = STATE.TOUCH_PAN;
+                }
 
 				break;
 
@@ -864,10 +871,18 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			case 1: // one-fingered touch: rotate
 
-				if ( scope.enableRotate === false ) return;
-				if ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?...
+                if ( scope.enableRotate )
+                {
+                    if ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?...
 
-				handleTouchMoveRotate( event );
+                    handleTouchMoveRotate( event );
+                }
+                else if ( scope.enablePan )
+                {
+                    if ( state !== STATE.TOUCH_PAN ) return; // is this needed?...
+
+                    handleTouchMovePan( event );
+                }
 
 				break;
 
