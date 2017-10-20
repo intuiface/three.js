@@ -135,7 +135,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 		var lastPosition = new THREE.Vector3();
 		var lastQuaternion = new THREE.Quaternion();
 
+        var lastDate = new Date();
+
 		return function update() {
+
 
 			var position = scope.object.position;
 
@@ -147,11 +150,13 @@ THREE.OrbitControls = function ( object, domElement ) {
 			// angle from z-axis around y-axis
 			spherical.setFromVector3( offset );
 
+            var newDate = new Date();
 			if ( scope.autoRotate && state === STATE.NONE ) {
 
-				rotateLeft( getAutoRotationAngle() );
+				rotateLeft( getAutoRotationAngle(newDate - lastDate) );
 
 			}
+            lastDate = newDate;
 
 			spherical.theta += sphericalDelta.theta;
 			spherical.phi += sphericalDelta.phi;
@@ -201,7 +206,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			scope.object.lookAt( scope.target );
 
-			if ( scope.enableDamping === true ) {
+			if ( scope.enableDamping === true && scope.autoRotate !== true ) {
 
 				sphericalDelta.theta *= ( 1 - scope.dampingFactor );
 				sphericalDelta.phi *= ( 1 - scope.dampingFactor );
@@ -294,9 +299,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 	var dollyEnd = new THREE.Vector2();
 	var dollyDelta = new THREE.Vector2();
 
-	function getAutoRotationAngle() {
+	function getAutoRotationAngle( dt ) {
 
-		return 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;
+        return scope.autoRotateSpeed * dt * 0.001;
 
 	}
 
