@@ -76,35 +76,7 @@ THREE.XAMLLoader.prototype =
             this.xmlDoc.loadXML(data);
         }
 
-        // Search camera node
-        this.cameraMatrix = null;
-        var nodeCamera = this.xmlDoc.getElementsByTagName("PerspectiveCamera.Transform")[0];
-        if (nodeCamera)
-        {
-            var nodeCameraMatrix = this._getChildNodeByName(nodeCamera, "MatrixTransform3D");
-            if (nodeCameraMatrix)
-            {
-                var attrCamera = this._getAttributeByName(nodeCameraMatrix, "Matrix");
-                if (attrCamera)
-                {
-                    var strCameraMatrix = attrCamera.value;
-                    var strCameraMatrixTokens = strCameraMatrix.split(/[ ,]+/);
-                    var matrixArray = [];
-                    for (var i = 0; i < strCameraMatrixTokens.length; i++)
-                    {
-                        matrixArray.push(parseFloat(strCameraMatrixTokens[i]));
-                    }
-                    if (matrixArray.length == 16)
-                    {
-                        this.cameraMatrix = new THREE.Matrix4();
-                        this.cameraMatrix.set(matrixArray[0], matrixArray[1], matrixArray[2], matrixArray[3],
-                            matrixArray[4], matrixArray[5], matrixArray[6], matrixArray[7],
-                            matrixArray[8], matrixArray[9], matrixArray[10], matrixArray[11],
-                            matrixArray[12], matrixArray[13], matrixArray[14], matrixArray[15]);
-                    }
-                }
-            }
-        }
+        this.searchCameraNode();
 
         // Create a callback to texture loading
         var self = this;
@@ -162,6 +134,39 @@ THREE.XAMLLoader.prototype =
         if (this.loading == 0)
         {
             this.createMeshes(onLoad);
+        }
+    },
+
+    searchCameraNode: function ()
+    {
+        // Search camera node
+        this.cameraMatrix = null;
+        var nodeCamera = this.xmlDoc.getElementsByTagName("PerspectiveCamera.Transform")[0];
+        if (nodeCamera)
+        {
+            var nodeCameraMatrix = this._getChildNodeByName(nodeCamera, "MatrixTransform3D");
+            if (nodeCameraMatrix)
+            {
+                var attrCamera = this._getAttributeByName(nodeCameraMatrix, "Matrix");
+                if (attrCamera)
+                {
+                    var strCameraMatrix = attrCamera.value;
+                    var strCameraMatrixTokens = strCameraMatrix.split(/[ ,]+/);
+                    var matrixArray = [];
+                    for (var i = 0; i < strCameraMatrixTokens.length; i++)
+                    {
+                        matrixArray.push(parseFloat(strCameraMatrixTokens[i]));
+                    }
+                    if (matrixArray.length == 16)
+                    {
+                        this.cameraMatrix = new THREE.Matrix4();
+                        this.cameraMatrix.set(matrixArray[0], matrixArray[1], matrixArray[2], matrixArray[3],
+                            matrixArray[4], matrixArray[5], matrixArray[6], matrixArray[7],
+                            matrixArray[8], matrixArray[9], matrixArray[10], matrixArray[11],
+                            matrixArray[12], matrixArray[13], matrixArray[14], matrixArray[15]);
+                    }
+                }
+            }
         }
     },
 
@@ -228,29 +233,27 @@ THREE.XAMLLoader.prototype =
                     }
 
                     geometry.faces.push(new THREE.Face3(indices[i], indices[i + 1], indices[i + 2],
-                        [
-                            normal1,
-                            normal2,
-                            normal3
-                        ]
+                        normal
                     ));
                 }
 
-                /* TODO
-                 var faceUV = [];
-                 for ( var i = 0; i < geometry.faces.length; i ++ )
-                 {
-                 var uv1 = uvs[ geometry.faces[ i ].a ];
-                 var uv2 = uvs[ geometry.faces[ i ].b ];
-                 var uv3 = uvs[ geometry.faces[ i ].c ];
+                var faceUV = [];
+                for ( var i = 0; i < geometry.faces.length; i ++ )
+                {
+                    var uv1 = uvs[ geometry.faces[ i ].a ];
+                    var uv2 = uvs[ geometry.faces[ i ].b ];
+                    var uv3 = uvs[ geometry.faces[ i ].c ];
 
-                 if (uv1 == null) uv1 = new THREE.Vector2(0, 0);
-                 if (uv2 == null) uv2 = new THREE.Vector2(0, 0);
-                 if (uv3 == null) uv3 = new THREE.Vector2(0, 0);
-                 faceUV.push( uv1, uv2, uv3);
-                 }
-                 geometry.faceVertexUvs[0] = faceUV;*/
+                    if (uv1 == null) uv1 = new THREE.Vector2(0, 0);
+                    if (uv2 == null) uv2 = new THREE.Vector2(0, 0);
+                    if (uv3 == null) uv3 = new THREE.Vector2(0, 0);
+
+                    faceUV.push([uv1, uv2, uv3]);
+                }
+
+                geometry.faceVertexUvs[0] = faceUV;
                 geometry.computeVertexNormals();
+                geometry.uvsNeedUpdate = true;
 
                 // Add the new mesh to group
                 this.groups[index].add(mesh);
@@ -262,7 +265,7 @@ THREE.XAMLLoader.prototype =
 
 
     /************************************************************************************
-     * Private Operations
+     * Private Operations (parsing operations)
      ************************************************************************************/
 
     /**
@@ -297,7 +300,7 @@ THREE.XAMLLoader.prototype =
             // Transformation
             else if (subNode.nodeName == "Model3DGroup.Transform")
             {
-                this._parseTransformation(subNode, group);
+                group = this._parseTransformation(subNode, group);
             }
 
             // Mesh
@@ -400,6 +403,27 @@ THREE.XAMLLoader.prototype =
             }
         }
 
+        // Search translation node
+        var nodeTranslate = this._getChildNodeByName(node, "TranslateTransform3D", true);
+        if (nodeTranslate)
+        {
+            var attrTranslateX = this._getAttributeByName(nodeTranslate, "OffsetX");
+            if (attrTranslateX)
+            {
+                group.position.x = parseFloat(attrTranslateX.value);
+            }
+            var attrTranslateY = this._getAttributeByName(nodeTranslate, "OffsetY");
+            if (attrTranslateY)
+            {
+                group.position.y = parseFloat(attrTranslateY.value);
+            }
+            var attrTranslateZ = this._getAttributeByName(nodeTranslate, "OffsetZ");
+            if (attrTranslateZ)
+            {
+                group.position.z = parseFloat(attrTranslateZ.value);
+            }
+        }
+
         // Search rotation node
         var nodesRotation = node.getElementsByTagName("AxisAngleRotation3D");
         for (var nodeIndex = 0; nodeIndex < nodesRotation.length; nodeIndex++)
@@ -459,6 +483,8 @@ THREE.XAMLLoader.prototype =
                 group.scale.z = parseFloat(attrScaleZ.value);
             }
         }
+
+        return group;
     },
 
     /**
@@ -737,17 +763,8 @@ THREE.XAMLLoader.prototype =
             color = attrBrush.value;
 
             // Convert hexadecimal value (ex '#AABBCCDD' to '0xAABBCCDD') for material
-            if (color[0] == '#')
-            {
-                if (color.length > 7)
-                {
-                    color = parseInt("0x" + color.slice(3, color.length));
-                }
-                else
-                {
-                    color = parseInt("0x" + color.slice(1, color.length));
-                }
-            }
+            color = this._convertColor(color);
+
             if (isDiffuse)
             {
                 this.materialParams[index].color = color;
@@ -811,17 +828,7 @@ THREE.XAMLLoader.prototype =
             color = attrColor.value;
 
             // Convert hexadecimal value (ex '#AABBCCDD' to '0xAABBCCDD')
-            if (color[0] == '#')
-            {
-                if (color.length > 7)
-                {
-                    color = parseInt("0x" + color.slice(3, color.length));
-                }
-                else
-                {
-                    color = parseInt("0x" + color.slice(1, color.length));
-                }
-            }
+            color = this._convertColor(color);
         }
 
         if (node.nodeName == "SpotLight" || node.nodeName == "PointLight")
@@ -913,6 +920,11 @@ THREE.XAMLLoader.prototype =
         this.camera.lookAt(look);
     },
 
+
+    /************************************************************************************
+     * Private Operations (util operations)
+     ************************************************************************************/
+
     /**
      * Load the given texture
      * @param url: url of image file
@@ -935,7 +947,7 @@ THREE.XAMLLoader.prototype =
             texture = new THREE.Texture();
 
             loader = new THREE.ImageLoader();
-            loader.crossOrigin = this.crossOrigin;
+            loader.crossOrigin = true;
             loader.load(url, function (image)
             {
                 texture.image = self._ensurePowerOfTwo(image);
@@ -946,6 +958,28 @@ THREE.XAMLLoader.prototype =
         }
 
         return texture;
+    },
+
+    /**
+     * Convert given color hexadecimal value (ex '#AABBCCDD' to '0xAABBCCDD').
+     * @param color: color to convert
+     * @returns {*}
+     * @private
+     */
+    _convertColor: function (color)
+    {
+        if (color[0] == '#')
+        {
+            if (color.length > 7)
+            {
+                return parseInt("0x" + color.slice(3, color.length));
+            }
+            else
+            {
+                return parseInt("0x" + color.slice(1, color.length));
+            }
+        }
+        return color;
     },
 
     /**
