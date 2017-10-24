@@ -98,6 +98,10 @@ THREE.XAMLLoader.prototype =
         {
             rootElement = this.xmlDoc.getElementsByTagName("ModelVisual3D");
         }
+        if (rootElement == null || !rootElement.length)
+        {
+            rootElement = this.xmlDoc.getElementsByTagName("Model3DGroup");
+        }
         if (rootElement != null && rootElement.length)
         {
             rootElement = rootElement[0];
@@ -718,6 +722,11 @@ THREE.XAMLLoader.prototype =
             if (strMaterial == null)
             {
                 strMaterial = this._getChildNodeByName(node, "MaterialGroup", true);
+
+                if (strMaterial == null)
+                {
+                    strMaterial = this._getChildNodeByName(node, "GeometryModel3D.Material", true);
+                }
             }
             if (strMaterial)
             {
