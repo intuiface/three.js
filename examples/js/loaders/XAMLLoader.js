@@ -40,8 +40,15 @@ THREE.XAMLLoader.prototype =
         loader.setResponseType('text');
         loader.load(url, function(text)
         {
-            var baseUrl = url.substring(0, url.lastIndexOf('/')+1);
-            self.parse(text, baseUrl, onLoad);
+            try
+            {
+                var baseUrl = url.substring(0, url.lastIndexOf('/')+1);
+                self.parse(text, baseUrl, onLoad);
+            }
+            catch(error)
+            {
+                onError(error);
+            }
         }, onProgress, onError);
     },
 
