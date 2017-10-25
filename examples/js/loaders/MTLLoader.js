@@ -372,12 +372,18 @@ THREE.MTLLoader.MaterialCreator.prototype = {
             var map = null;
 
             // If mtl declare a bad path to texture, try with root directory
+			var errorManaged = false;
             var onError = function()
             {
-                var lastSlashIndex = texParams.url.lastIndexOf('/');
-                if (lastSlashIndex == -1) lastSlashIndex = texParams.url.lastIndexOf('\\');
-                var relativePath = texParams.url.substring( lastSlashIndex + 1 );
-                map.image.src = resolveURL( scope.baseUrl, relativePath );
+            	if (!errorManaged)
+				{
+                    errorManaged = true;
+
+                    var lastSlashIndex = texParams.url.lastIndexOf('/');
+                    if (lastSlashIndex == -1) lastSlashIndex = texParams.url.lastIndexOf('\\');
+                    var relativePath = texParams.url.substring( lastSlashIndex + 1 );
+                    map.image.src = resolveURL( scope.baseUrl, relativePath );
+				}
             };
 
             map = scope.loadTexture( resolveURL( scope.baseUrl, texParams.url ), undefined, undefined, undefined, onError );
