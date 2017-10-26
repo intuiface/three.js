@@ -802,11 +802,11 @@ THREE.XAMLLoader.prototype =
                     this.loading++;
                     if (isDiffuse)
                     {
-                        this.materialParams[index].map = this._loadTexture(imageUrl, this.onTextureLoaded);
+                        this.materialParams[index].map = this._loadTexture(imageUrl, this.onTextureLoaded, this.onTextureLoaded);
                     }
                     else
                     {
-                        this.materialParams[index].specularMap = this._loadTexture(imageUrl, this.onTextureLoaded);
+                        this.materialParams[index].specularMap = this._loadTexture(imageUrl, this.onTextureLoaded, this.onTextureLoaded);
                     }
                 }
             }
@@ -965,12 +965,16 @@ THREE.XAMLLoader.prototype =
             loader = new THREE.ImageLoader();
             loader.crossOrigin = true;
             loader.load(url, function (image)
-            {
-                texture.image = self._ensurePowerOfTwo(image);
-                texture.needsUpdate = true;
+                {
+                    texture.image = self._ensurePowerOfTwo(image);
+                    texture.needsUpdate = true;
 
-                if (onLoad) onLoad(texture);
-            } );
+                    if (onLoad) onLoad(texture);
+                }, undefined,
+                function (error)
+                {
+                    if (onError) onError(error);
+                });
         }
 
         return texture;
