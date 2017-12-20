@@ -43,6 +43,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 	this.minAzimuthAngle = - Infinity; // radians
 	this.maxAzimuthAngle = Infinity; // radians
 
+    // Pan limits.
+    this.targetRadius = 1;
+    this.constrainPan = false;
+
 	// Set to true to enable damping (inertia)
 	// If damping is enabled, you must call controls.update() in your animation loop
 	this.enableDamping = false;
@@ -131,7 +135,10 @@ THREE.OrbitControls = function ( object, domElement ) {
 		var lastPosition = new THREE.Vector3();
 		var lastQuaternion = new THREE.Quaternion();
 
+        var lastDate = new Date();
+
 		return function update() {
+
 
 			var position = scope.object.position;
 
@@ -143,11 +150,13 @@ THREE.OrbitControls = function ( object, domElement ) {
 			// angle from z-axis around y-axis
 			spherical.setFromVector3( offset );
 
+            var newDate = new Date();
 			if ( scope.autoRotate && state === STATE.NONE ) {
 
-				rotateLeft( getAutoRotationAngle() );
+				rotateLeft( getAutoRotationAngle(newDate - lastDate) );
 
 			}
+            lastDate = newDate;
 
 			spherical.theta += sphericalDelta.theta;
 			spherical.phi += sphericalDelta.phi;
@@ -169,6 +178,25 @@ THREE.OrbitControls = function ( object, domElement ) {
 			// move target to panned location
 			scope.target.add( panOffset );
 
+            // Constrain pan
+            if (scope.constrainPan)
+            {
+                // Compute original camera distance
+                var originalOffset = new THREE.Vector3();
+                originalOffset.copy( scope.target0 ).sub( scope.position0 );
+                var originalCameraDistance = originalOffset.length();
+
+                // Compute max offset according to current camera distance and target size
+                var radius = spherical.radius * scope.targetRadius / originalCameraDistance;
+
+                // Clamp pan
+                if ( scope.target.x < -radius ) scope.target.x = -radius;
+                else if ( scope.target.x > radius ) scope.target.x = radius;
+
+                if ( scope.target.y < -radius ) scope.target.y = -radius;
+                else if ( scope.target.y > radius ) scope.target.y = radius;
+            }
+
 			offset.setFromSpherical( spherical );
 
 			// rotate offset back to "camera-up-vector-is-up" space
@@ -178,7 +206,7 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			scope.object.lookAt( scope.target );
 
-			if ( scope.enableDamping === true ) {
+			if ( scope.enableDamping === true && scope.autoRotate !== true ) {
 
 				sphericalDelta.theta *= ( 1 - scope.dampingFactor );
 				sphericalDelta.phi *= ( 1 - scope.dampingFactor );
@@ -271,9 +299,9 @@ THREE.OrbitControls = function ( object, domElement ) {
 	var dollyEnd = new THREE.Vector2();
 	var dollyDelta = new THREE.Vector2();
 
-	function getAutoRotationAngle() {
+	function getAutoRotationAngle( dt ) {
 
-		return 2 * Math.PI / 60 / 60 * scope.autoRotateSpeed;
+        return scope.autoRotateSpeed * dt * 0.001;
 
 	}
 
@@ -788,11 +816,18 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			case 1:	// one-fingered touch: rotate
 
-				if ( scope.enableRotate === false ) return;
+                if ( scope.enableRotate )
+                {
+                    handleTouchStartRotate( event );
 
-				handleTouchStartRotate( event );
+                    state = STATE.TOUCH_ROTATE;
+                }
+                else if ( scope.enablePan )
+                {
+                    handleTouchStartPan( event );
 
-				state = STATE.TOUCH_ROTATE;
+                    state = STATE.TOUCH_PAN;
+                }
 
 				break;
 
@@ -841,10 +876,18 @@ THREE.OrbitControls = function ( object, domElement ) {
 
 			case 1: // one-fingered touch: rotate
 
-				if ( scope.enableRotate === false ) return;
-				if ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?...
+                if ( scope.enableRotate )
+                {
+                    if ( state !== STATE.TOUCH_ROTATE ) return; // is this needed?...
 
-				handleTouchMoveRotate( event );
+                    handleTouchMoveRotate( event );
+                }
+                else if ( scope.enablePan )
+                {
+                    if ( state !== STATE.TOUCH_PAN ) return; // is this needed?...
+
+                    handleTouchMovePan( event );
+                }
 
 				break;
 
