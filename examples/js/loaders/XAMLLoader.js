@@ -293,13 +293,15 @@ THREE.XAMLLoader.prototype =
             var subNode = node.childNodes[childIndex];
 
             // Children
-            if (subNode.nodeName == "Model3DGroup.Children" || subNode.nodeName == "ModelVisual3D.Content")
+            if (subNode.nodeName == "Model3DGroup.Children" ||
+                subNode.nodeName == "ModelVisual3D.Content" ||
+                subNode.nodeName == "ModelVisual3D.Children")
             {
                 this._parseNode(subNode, baseUrl, group);
             }
 
             // Sub-group
-            else if (subNode.nodeName == "Model3DGroup")
+            else if (subNode.nodeName == "Model3DGroup" || subNode.nodeName == "ModelVisual3D")
             {
                 // Create a sub-group
                 var subGroup = new THREE.Group();
@@ -309,7 +311,7 @@ THREE.XAMLLoader.prototype =
             }
 
             // Transformation
-            else if (subNode.nodeName == "Model3DGroup.Transform")
+            else if (subNode.nodeName == "Model3DGroup.Transform" || subNode.nodeName == "ModelVisual3D.Transform")
             {
                 group = this._parseTransformation(subNode, group);
             }
