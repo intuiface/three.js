@@ -30081,7 +30081,7 @@
 
 				request.addEventListener( 'load', function ( event ) {
 
-					var response = event.target.response;
+					var response = event.target ? event.target.response : this.response;
 
 					Cache.add( url, response );
 
